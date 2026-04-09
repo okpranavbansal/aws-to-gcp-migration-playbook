@@ -1,4 +1,10 @@
 # AWS to GCP Migration Playbook
+> Production migration guide: 37 ECS Fargate services → 23 GKE Autopilot workloads with full GitOps via ArgoCD.
+
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white) ![GCP](https://img.shields.io/badge/GCP-4285F4?style=flat&logo=googlecloud&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white) ![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=flat&logo=argo&logoColor=white)
+> Production migration guide: 37 ECS Fargate services → 23 GKE Autopilot workloads with full GitOps via ArgoCD.
+
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white) ![GCP](https://img.shields.io/badge/GCP-4285F4?style=flat&logo=googlecloud&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white) ![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=flat&logo=argo&logoColor=white)
 
 A comprehensive guide to migrating a production B2B SaaS platform from **AWS ECS Fargate** (37 microservices) to **Google Kubernetes Engine (GKE)** with full GitOps via ArgoCD.
 
@@ -169,3 +175,10 @@ aws-to-gcp-migration-playbook/
     ├── gcp-gateway.yaml
     └── iam-comparison.md
 ```
+
+## Author
+
+**Pranav Bansal** — AI Infrastructure & SRE Engineer
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/okpranavbansal)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/okpranavbansal)
