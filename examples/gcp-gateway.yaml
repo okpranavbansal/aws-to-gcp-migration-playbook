@@ -1,0 +1,31 @@
+# Sanitized example: GKE Gateway API (L7 Global External LB)
+# Replaces ALB + CloudFront for application traffic
+# Derived from real production configuration
+
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: prd-copilot-gateway
+  namespace: prd-copilot
+  annotations:
+    networking.gke.io/certmap: "prd-acme-corp-map"   # Google-managed certificate map
+    argocd.argoproj.io/sync-wave: "0"                 # Apply before HTTPRoutes (wave 10)
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  addresses:
+    - type: NamedAddress
+      value: prd-copilot-ip    # Static external IP reserved in GCP
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      allowedRoutes:
+        namespaces:
+          from: Same

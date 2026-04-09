@@ -1,0 +1,106 @@
+# Sanitized example: GKE Deployment
+# Equivalent of the ECS service + task definition in aws-ecs-service.tf
+# Pattern used across all 23 GKE workloads in iac-gcp
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: prd-copilot
+  annotations:
+    reloader.stakater.com/auto: "true"   # restart pods when secret/configmap changes
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+        team: platform
+        version: v1
+    spec:
+      serviceAccountName: copilot-sa   # Workload Identity SA (see iam-comparison.md)
+      containers:
+        - name: billing-service
+          image: asia-southeast1-docker.pkg.dev/prj-acme-prd/copilot/billing-service:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: billing-service-secret   # SOPS-encrypted, decrypted by KSOPS
+          env:
+            - name: APP_ENV
+              value: "prd"
+            - name: SERVICE_NAME
+              value: "billing-service"
+          resources:
+            # Right-sized from rightsizing-audit.sh results
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service
+  namespace: prd-copilot
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'   # creates NEG for Gateway API
+spec:
+  selector:
+    app: billing-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: billing-service-pdb
+  namespace: prd-copilot
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: billing-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: billing-service-hpa
+  namespace: prd-copilot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: billing-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

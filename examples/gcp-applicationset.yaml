@@ -1,0 +1,66 @@
+# Sanitized example: ArgoCD ApplicationSet
+# Automatically creates one ArgoCD Application per apps/*/overlays/prd directory
+# Derived from real production configuration
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: copilot-apps-prd
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        directories:
+          - path: apps/*/overlays/prd
+        repoURL: https://github.com/acme-org/iac-gcp.git
+        revision: main
+  goTemplate: true
+  template:
+    metadata:
+      # Name pattern: prd-billing-service, prd-auth-service, etc.
+      name: '{{ index (splitList "/" .path.path) 3 }}-{{ index (splitList "/" .path.path) 1 }}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io/background
+      annotations:
+        argocd.argoproj.io/sync-wave: "10"
+    spec:
+      destination:
+        namespace: '{{ index (splitList "/" .path.path) 3 }}-copilot'
+        server: https://kubernetes.default.svc
+      # Ignore GKE-injected annotations and Autopilot-injected resource fields
+      ignoreDifferences:
+        - group: ""
+          kind: Service
+          jsonPointers:
+            - /metadata/annotations/cloud.google.com~1neg
+            - /metadata/annotations/cloud.google.com~1neg-status
+        - group: apps
+          kind: Deployment
+          jqPathExpressions:
+            - .spec.template.spec.containers[].resources.requests."ephemeral-storage"
+            - .spec.template.spec.containers[].resources.limits."ephemeral-storage"
+            - .spec.template.spec.containers[].securityContext.capabilities
+            - .spec.template.spec.securityContext.seccompProfile
+            - .spec.template.spec.tolerations
+            - .spec.template.metadata.annotations."reloader.stakater.com/last-reloaded-from"
+      project: copilot
+      source:
+        path: "{{ .path.path }}"
+        repoURL: https://github.com/acme-org/iac-gcp.git
+        targetRevision: main
+        plugin:
+          name: ksops    # SOPS decryption plugin on ArgoCD repo-server
+      syncPolicy:
+        automated:
+          prune: true        # delete resources removed from Git
+          selfHeal: true     # revert manual kubectl changes
+        retry:
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+          limit: 5
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - PruneLast=true
